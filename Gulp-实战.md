@@ -8,7 +8,7 @@ By lxl
 
 ------
 
-> `Gulp` 入门教程 + 实战，主要说明目前我们前端组用的 `Gulpfile.js`里面所包含的插件 
+> `Gulp` 入门教程 + 实战，主要说明目前我们前端组用的 `Gulpfile.js`里面所包含的插件
 
 ------
 
@@ -19,13 +19,15 @@ By lxl
 ### 注意点
 -  `Gulpfile`文件的文件名貌似就该是 `gulpfile.js`，不要问我为什么，我也不知道为什么改了其他名字就不行了
 
-### 下面是 我们前端组目前比较通用的  `gulpfile.js`
-- 以 项目 `static-pages/simple-insurance-admin`为例子，打开项目根据目录去看更好理解
+### 下面是 我们前端组目前比较通用的  `gulpfile.js`，加个人修改后完成
+- 以 项目 `static-pages/main-sell`为例子，打开项目根据目录去看更好理解
 
-![cut](img/directory.png)
+![cut](img/main-sell-directory.png)
 
-- 加上了注释和文档,去掉了注释其实不多东西的，有些没解释的是因为我还没去搞懂..
+- 加上了注释和文档,去掉了注释其实不多东西的
 `````javascript
+//npm i gulp gulp-less gulp-file-include gulp-sourcemaps less-plugin-autoprefix stream-combiner2 browser-sync http-proxy --save-dev
+
 var gulp = require('gulp');
 var less = require('gulp-less');
 
@@ -39,6 +41,7 @@ var fileinclude = require('gulp-file-include');
 var sourcemaps = require('gulp-sourcemaps');
 
 // less-plugin-autoprefix：为 less 添加浏览器前缀
+// 注意 `last 3 versions`，设为低于3有些属性没有-webkit—前缀，比如 flexbox 布局属性 
 // 文档：http://www.ydcss.com/archives/94
 var LessAutoprefix = require('less-plugin-autoprefix'),
     autoprefix = new LessAutoprefix({ browsers: ['last 3 versions']});
@@ -51,18 +54,26 @@ var LessAutoprefix = require('less-plugin-autoprefix'),
 //类似的插件还有 plumber 插件
 var combiner = require('stream-combiner2');
 
+// 超好用的插件，既可以开启静态服务器、代理服务器，还可以同步所有浏览器操作
+// 关键是还可以　remote debug，内置了 weinre
+// 但有一个注意点是，打开 remote debug 之前先打开要调试的网页
+// http://blog.csdn.net/u012038144/article/details/46641383
 var browserSync = require('browser-sync').create(),
     reload = browserSync.reload;
 
+// 代理服务器插件
+// https://www.npmjs.com/package/http-proxy
 var httpProxy = require('http-proxy'),
     proxy = httpProxy.createProxyServer({});
 
 var paths = {
     base: './', // 为当前目录
-    tpl: ['tpl/*.*'], // *.* 匹配 任何名字的任何文件 
-    html: ['./*.html'], // ./*.html 匹配当前目录下的 html文件
-    css: ['css/**'],   // ** 任何文件/文件夹
-    less: ['less/**', '!less/base*', '!less/lesshat*', '!less/normalize*', '!less/common/**', '!less/animate*', '!less/common'],  
+    tplFilter: ['tpl/*.*'], // '*.*' 匹配tpl文件夹的任何文件/文件夹 
+    tpl: ['tpl/**'],
+    html: ['./*.html'], // './*.html' 匹配当前目录下的 html文件
+    less: ['less/**'],
+    lessFilter: ['less/**', '!less/base*',  '!less/normalize*', '!less/animate*', '!less/common/**', '!less/common*'] 
+    //切记别写成 '!less/common'
 };
 
 
@@ -76,16 +87,20 @@ gulp.task('serve-watch', function(){
             middleware: [      //设置中间件，代理
                 function(req, res, next) {
                     if(/thpcluster/i.test(req.url)){
-                          proxy.web(req, res, { target: 'http://192.183.3.91/' });
+                          proxy.web(req, res, { target: 'http://192.183.3.91/' }, function(e){
+                            console.log(e);  //捕获错误，不然 server 会断开
+                          });
+
                     }
                     else{
                         next();
                     }
                 }
             ],
-            open: true, //开启服务器之后是否自动打开浏览器
-            reloadDelay: 500,  //Time, in milliseconds, to wait before instructing the browser to reload/inject following a file change event
         },
+        open: true, //开启服务器之后是否自动打开浏览器
+        reloadDelay: 500,  
+        //Time, in milliseconds, to wait before instructing the browser to reload/inject following a file change event
     });
     gulp.watch(paths.less, ['less']);
     gulp.watch(paths.tpl, ['html']);
@@ -93,7 +108,7 @@ gulp.task('serve-watch', function(){
 
 gulp.task('html', function(){
     var combined = combiner.obj([
-            gulp.src(paths.tpl),
+            gulp.src(paths.tplFilter),
             fileinclude({
                 prefix: '@@',
                 basepath: '@file', // @file为当前文件位置，也可以是 @root，表示gulp启动的位置
@@ -108,7 +123,7 @@ gulp.task('html', function(){
 
 gulp.task('less', function(){
     var combined = combiner.obj([
-            gulp.src(paths.less),
+            gulp.src(paths.lessFilter),
             sourcemaps.init(),
             less({ plugins: [autoprefix]}),
             sourcemaps.write(),
