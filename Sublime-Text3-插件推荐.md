@@ -53,6 +53,7 @@ import urllib.request,os; pf = 'Package Control.sublime-package'; ipp = sublime.
 - markdown Editing：`markdown` 语法高亮
 - OmnimarkupPreviwer：在浏览器上预览效果，快捷键为 `ctrl + alt + o` 
 - DocBlockr：JS等代码的注释插件 [DocBlockr](https://github.com/spadgos/sublime-jsdocs)，输入 `/**`，再按 `tab` 即可触发，`CSS`文件不能触发
+- [AutoFileName](https://github.com/BoundInCode/AutoFileName)：可以使用相对路径来自动填充文件名
 
 ## 结束语
 好了，赶紧去配置属于自己的 `Sublime Text3` 吧
